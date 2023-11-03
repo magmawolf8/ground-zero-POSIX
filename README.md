@@ -1,2 +1,2 @@
-# ground-zero
-An application that stops procrastination in its tracks
+# ground-zero-POSIX
+POSIX-compliant version of the ground zero clock.
