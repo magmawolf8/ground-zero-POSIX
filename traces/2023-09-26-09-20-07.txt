@@ -1,0 +1,8 @@
+1. AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+2. 
+3. nine-twenty now
+4. 
+5. we have trouble finding synchronization
+6. like in python, instead of just passisgn along the parameter of the task scheduler, we acces sthe time again
+7. 
+8. oh shoot we need to complete our physics stuff

@@ -1,0 +1,3 @@
+1. hmmmmmm
+2. what could be causing our current issues with the rotation and the direction to not obey what we want it to?
+3. it should be how we're handling the odometry.

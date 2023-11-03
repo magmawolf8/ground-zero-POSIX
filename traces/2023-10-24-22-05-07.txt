@@ -1,0 +1,1 @@
+1. they just input an entire image into the network to bias it correctly

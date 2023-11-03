@@ -1,0 +1,2 @@
+1. i think, if we input the file into chatgpt, it won't read the entire thing. i can make an LDA model, then input that into chatgpt
+2. i wonder if everything is saved

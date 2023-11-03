@@ -1,0 +1,5 @@
+1. oh
+2. uh
+3. how do different parts of the website synchronize with each other when an update rolls out/
+4. is there just a central ledger indicating everything to change?\
+5. do they work in slowmotion?

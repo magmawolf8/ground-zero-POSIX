@@ -1,0 +1,8 @@
+1. it's not a good idea to diff this anyhow
+2. fuck
+3. we still need to fix our robot code
+4. it's so confusion
+5. it's just not doing the things it should do
+6. 
+7. any amount of gauge theory isn't gonna help. if the display is wrong, the inputs must be wrong
+8. post: any amount of testing won't help
