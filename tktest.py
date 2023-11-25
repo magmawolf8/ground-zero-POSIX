@@ -172,36 +172,31 @@ class ProgressClock(tk.Frame):
         super().__init__(parent, width=width, bg=c2, highlightthickness=1, highlightbackground=c1)
 
         # Composite frame for hour progress bar and label
-        self.hour_frame = tk.Frame(self, width=width, bg=c2)
-        #self.hour_frame.pack_propagate(False)  # Prevent resizing of frame by children
+        self.hour_frame = tk.Frame(self, bg=c2)
+        self.hour_frame.grid(row=0, column=0, sticky='ew')
         self.hour_progress = ttk.Progressbar(self.hour_frame, style="Horizontal.TProgressbar", orient="horizontal", mode="determinate", maximum=23)
-        self.hour_progress.pack(fill=tk.BOTH, expand=True)
+        self.hour_progress.grid(row=0, column=0, sticky='ew')
         self.hour_label = tk.Label(self.hour_frame, text="24HOUR: 00", font=("Courier", 8), fg=c1, bg=c2)
-        self.hour_label.place(relx=0.5, rely=0.42, anchor='center')
+        self.hour_label.place(relx=0.5, rely=0.5, anchor='center')
 
         # Composite frame for minute progress bar and label
-        self.minute_frame = tk.Frame(self, width=width, bg=c2)
-        #self.minute_frame.pack_propagate(False)
+        self.minute_frame = tk.Frame(self, bg=c2)
+        self.minute_frame.grid(row=1, column=0, sticky='ew')
         self.minute_progress = ttk.Progressbar(self.minute_frame, style="Horizontal.TProgressbar", orient="horizontal", mode="determinate", maximum=59)
-        self.minute_progress.pack(fill=tk.BOTH, expand=True)
+        self.minute_progress.grid(row=1, column=0, sticky='ew')
         self.minute_label = tk.Label(self.minute_frame, text="MINUTE: 00", font=("Courier", 8), fg=c1, bg=c2)
-        self.minute_label.place(relx=0.5, rely=0.42, anchor='center')
+        self.minute_label.place(relx=0.5, rely=0.5, anchor='center')
 
         # Composite frame for second progress bar and label
-        self.second_frame = tk.Frame(self, width=width, bg=c2)
-        #self.second_frame.pack_propagate(False)
+        self.second_frame = tk.Frame(self, bg=c2)
+        self.second_frame.grid(row=2, column=0, sticky='ew')
         self.second_progress = ttk.Progressbar(self.second_frame, style="Horizontal.TProgressbar", orient="horizontal", mode="determinate", maximum=59)
-        self.second_progress.pack(fill=tk.BOTH, expand=True)
+        self.second_progress.grid(row=2, column=0, sticky='ew')
         self.second_label = tk.Label(self.second_frame, text="SECOND: 00", font=("Courier", 8), fg=c1, bg=c2)
-        self.second_label.place(relx=0.5, rely=0.42, anchor='center')
+        self.second_label.place(relx=0.5, rely=0.5, anchor='center')
 
-        # Pack the frames
-        self.hour_frame.pack(fill=tk.X, expand=True)
-        self.minute_frame.pack(fill=tk.X, expand=True)
-        self.second_frame.pack(fill=tk.X, expand=True)
+        self.grid_columnconfigure(0, weight=1)  # Allow column 0 to expand
 
-        # Start the animation
-        #self.animate()
 
     def tock(self, rn):
         self.hour_label['text'] = f"TFHOUR: {rn.hour}"
@@ -375,7 +370,7 @@ class PrimeFun(tk.Frame):
 
 
 class TextEditor(tk.Frame):
-    def __init__(self, parent, bg_color, fg_color, font=("Courier", 20), *args, **kwargs):
+    def __init__(self, parent, bg_color, fg_color, font=("Courier", 10), *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
 
         self.configure(bg=bg_color)
