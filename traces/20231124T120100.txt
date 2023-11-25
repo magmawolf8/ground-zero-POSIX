@@ -1,0 +1,3 @@
+how do I add git functionality to this?
+i need to know how to visualize diagrams in git
+I also need to know how

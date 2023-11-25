@@ -1,0 +1,4 @@
+87890790870987
+674755746745765
+something that blocks the movement
+something that will change the behavior of the goes_the_clock to avoid triggering on stratup

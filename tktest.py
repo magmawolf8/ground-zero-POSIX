@@ -6,61 +6,63 @@ from datetime import datetime
 
 import csv
 import random
+import math
 import re
+
+
+from threading import Thread
+import os
 
 
 class Marquee(tk.Canvas):
     def __init__(self, parent, margin=2, borderwidth=1, c1="white", c2="black"):
         super().__init__(parent, borderwidth=borderwidth, bg=c2, highlightthickness=1, highlightbackground=c1)
 
-        self.fps = 60
+        self.fps = 45
         self.margin = margin
-        self.borderwidth=borderwidth
-        self.c1=c1
-        self.c2=c2
+        self.borderwidth = borderwidth
+        self.c1 = c1
+        self.c2 = c2
         
-        # start by drawing the text off screen, then asking the canvas
-        # how much space we need. Use that to compute the initial size
-        # of the canvas. 
-        rn=datetime.now()
-        self.displayed_min=int(rn.minute)
-
-        text = self.create_text(0, -1000, text=self.get_random_entry(int(rn.hour), int(rn.minute))[2], anchor="w", tags=("text",), font=("Courier", 20), fill=self.c1)
-        (x0, y0, x1, y1) = self.bbox("text")
-        self.width = (x1 - x0) + (2*margin) + (2*borderwidth)
-        self.height = (y1 - y0) + (2*margin) + (2*borderwidth)
-        self.configure(width=self.width, height=self.height)
-
-        
-
-        # start the animation
+        self.displayed_min = -1  # Invalid initial value to ensure update
+        self.current_text = ""
+        #self.load_text_data()
+        self.init_text_widget()
         self.animate()
 
-    def animate(self):
+    def init_text_widget(self):
+        self.text_widget = self.create_text(0, -1000, anchor="w", tags=("text",), font=("Courier", 20), fill=self.c1)
+        #self.update_text_content()
+
+    def tick(self, rn):
+        if rn.minute != self.displayed_min:
+            new_text = self.get_random_entry(int(rn.hour), int(rn.minute))[2]
+            if new_text != self.current_text:
+                self.current_text = new_text
+                self.itemconfig(self.text_widget, text=new_text)
+                self.displayed_min = int(rn.minute)
+                self.update_widget_size()
+
+    def update_widget_size(self):
         (x0, y0, x1, y1) = self.bbox("text")
-        if x1 < 0 or y0 < 0:
-            # everything is off the screen; reset the X
-            rn=datetime.now()
-            if rn.minute != self.displayed_min:
-                self.get_random_entry(int(rn.hour), int(rn.minute))
-                self.displayed_min=int(rn.minute)
+        self.width = (x1 - x0) + (2 * self.margin) + (2 * self.borderwidth)
+        self.height = (y1 - y0) + (2 * self.margin) + (2 * self.borderwidth)
+        self.configure(width=self.width, height=self.height)
 
-                self.delete("text")
-                text = self.create_text(0, -1000, text=self.get_random_entry(int(rn.hour), int(rn.minute))[2], anchor="w", tags=("text",), font=("Courier", 20), fill=self.c1)
-                (x0, y0, x1, y1) = self.bbox("text")
-                self.width = (x1 - x0) + (2*self.margin) + (2*self.borderwidth)
-                self.height = (y1 - y0) + (2*self.margin) + (2*self.borderwidth)
-                self.configure(width=self.width, height=self.height)
+    def animate(self):
+        #self.update_text_content()
+        self.move_text()
+        self.blackbody_to_rgb(abs((datetime.now().second * 1000 + datetime.now().microsecond//1000)-30000)*2/3+500)
+        self.after(int(1000 / self.fps), self.animate)
 
-            # to be just past the right margin
+    def move_text(self):
+        (x0, y0, x1, y1) = self.bbox("text")
+        if x1 < 0:
             x0 = self.winfo_width()
-            y0 = int(self.winfo_height()/2)
-            self.coords("text", x0, y0)
         else:
-            self.move("text", -3, 0)
-
-        # do again in a few milliseconds
-        self.after_id = self.after(int(1000/self.fps), self.animate)
+            x0 -= 4  # Speed of text movement
+        y0 = int(self.winfo_height() / 2)
+        self.coords("text", x0, y0)
 
     def get_random_entry(self, h, m):
 
@@ -68,7 +70,7 @@ class Marquee(tk.Canvas):
         lit_clock_selected = [time_csv, self.print_words(h, m), self.print_words(h, m)]
 
         try:
-            with open("./times/" + time_csv + ".csv", newline='', encoding="utf8") as lit_clock_time:
+            with open(os.path.join(os.getcwd(), "times", time_csv + ".csv"),newline='', encoding="utf8") as lit_clock_time:
                 lit_clock_reader = csv.reader(lit_clock_time, delimiter='|')
                 try:
                     lit_clock_selected=next(lit_clock_reader)
@@ -86,6 +88,9 @@ class Marquee(tk.Canvas):
             pass
 
         return lit_clock_selected
+    
+    def get_displayed_min(self):
+        return self.displayed_min
 
 
     def print_words(self, h, m):
@@ -123,9 +128,42 @@ class Marquee(tk.Canvas):
         elif (m > 30):
             return nums[60 - m] + " minutes to" + " " + nums[(h % 12) + 1]
         
-    def get_displayedmin(self):
-        return self.displayed_min
-        
+    def blackbody_to_rgb(self, temperature):
+        # Constants for the calculation
+        intensity_max = 255
+
+        # Convert temperature to Kelvin
+        temperature = temperature / 100
+
+        # Calculate Red
+        if temperature <= 66:
+            R = intensity_max
+        else:
+            R = temperature - 60
+            R = 329.698727446 * (R ** -0.1332047592)
+            R = max(0, min(intensity_max, R))
+
+        # Calculate Green
+        if temperature <= 66:
+            G = temperature
+            G = 99.4708025861 * math.log(G) - 161.1195681661
+        else:
+            G = temperature - 60
+            G = 288.1221695283 * (G ** -0.0755148492)
+        G = max(0, min(intensity_max, G))
+
+        # Calculate Blue
+        if temperature >= 66:
+            B = intensity_max
+        elif temperature <= 19:
+            B = 0
+        else:
+            B = temperature - 10
+            B = 138.5177312231 * math.log(B) - 305.0447927307
+            B = max(0, min(intensity_max, B))
+
+        self.itemconfig("text", fill=('#%02x%02x%02x' % (int(R), int(G), int(B))))
+        #self.set_progress_color(('#%02x%02x%02x' % (int(R), int(G), int(B))))
 
 
 
@@ -163,10 +201,9 @@ class ProgressClock(tk.Frame):
         self.second_frame.pack(fill=tk.X, expand=True)
 
         # Start the animation
-        self.animate()
+        #self.animate()
 
-    def animate(self):
-        rn = datetime.now()
+    def tock(self, rn):
         self.hour_label['text'] = f"TFHOUR: {rn.hour}"
         self.hour_progress['value'] = rn.hour
         self.minute_label['text'] = f"MINUTE: {rn.minute}"
@@ -177,62 +214,7 @@ class ProgressClock(tk.Frame):
         # Calculate remaining milliseconds until the next second
         millisec_until_next_sec = (1000 - rn.microsecond // 1000) if (1000 - rn.microsecond // 1000) < 1000 else 1000 
 
-        # self.rainbows(abs((rn.microsecond // 1000)-500)*4/5 + 380)
-
-        # Schedule the next update at the beginning of the next second
-        self.after(millisec_until_next_sec, self.animate)
-
-    
-    def rainbows(self, wavelength):
-        gamma = 0.80
-        intensity_max = 255
-
-        if 380 <= wavelength <= 440:
-            attenuation = 0.3 + 0.7 * (wavelength - 380) / (440 - 380)
-            R = ((-(wavelength - 440) / (440 - 380)) * attenuation) ** gamma
-            G = 0.0
-            B = (1.0 * attenuation) ** gamma
-        elif 440 <= wavelength <= 490:
-            R = 0.0
-            G = ((wavelength - 440) / (490 - 440)) ** gamma
-            B = 1.0
-        elif 490 <= wavelength <= 510:
-            R = 0.0
-            G = 1.0
-            B = (-(wavelength - 510) / (510 - 490)) ** gamma
-        elif 510 <= wavelength <= 580:
-            R = ((wavelength - 510) / (580 - 510)) ** gamma
-            G = 1.0
-            B = 0.0
-        elif 580 <= wavelength <= 645:
-            R = 1.0
-            G = (-(wavelength - 645) / (645 - 580)) ** gamma
-            B = 0.0
-        elif 645 <= wavelength <= 780:
-            attenuation = 0.3 + 0.7 * (780 - wavelength) / (780 - 645)
-            R = (1.0 * attenuation) ** gamma
-            G = 0.0
-            B = 0.0
-        else:
-            R = 0.0
-            G = 0.0
-            B = 0.0
-
-        # Scale to max intensity
-        R *= intensity_max
-        G *= intensity_max
-        B *= intensity_max
-
-        self.set_progress_color(('#%02x%02x%02x' % (int(R), int(G), int(B))))
-    
-    
-    def set_progress_color(self, color):
-        self.hour_label['bg'] = color
-        self.minute_label['bg'] = color
-        self.second_label['bg'] = color
-    
-        style.configure("Horizontal.TProgressbar", background=color, troughcolor=dark_bg, bordercolor=dark_bg)
-        root.configure(bg=color)
+        #self.after(millisec_until_next_sec, self.animate)
     
 
 class PrimeFun(tk.Frame):
@@ -244,7 +226,7 @@ class PrimeFun(tk.Frame):
 
         self.enable_entry()
 
-        self.prime_entry = tk.Entry(self, validate="key", validatecommand=(root.register(self.only_numbers), '%S'), relief="flat", font=("Courier", 40), highlightthickness=1)
+        self.prime_entry = tk.Entry(self, validate="key", validatecommand=(self.register(self.only_numbers_valid_times), '%S'), relief="flat", font=("Courier", 40), highlightthickness=1)
         self.set_entry_color(outline=self.c1, background=self.c2, text=self.c1)
         self.primes_box = tk.Label(self, text="[]", font=("Courier", 40))# tk text box, storing primes. right aligned, find two sets named entered and not_entered, this one displaying entered primes
         self.set_primes_box_color(background=c2, text=self.c1, outline=c1)
@@ -317,7 +299,7 @@ class PrimeFun(tk.Frame):
 
     # functions governing the entry box
 
-    def only_numbers(self, char):
+    def only_numbers_valid_times(self, char):
         print("this is called, " + str(char.isdigit()) + str(self.allow_input))
         return char.isdigit() and self.allow_input
 
@@ -388,56 +370,107 @@ class PrimeFun(tk.Frame):
 
     def get_complete(self):
         return not self.all_primes
+    
+
+
+
+class TextEditor(tk.Frame):
+    def __init__(self, parent, bg_color, fg_color, font=("Courier", 20), *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+
+        self.configure(bg=bg_color)
+        self.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        # Create the text box
+        self.text_box = tk.Text(self, relief="flat", font=font, bg=bg_color, fg=fg_color, insertbackground=fg_color, highlightthickness=1, highlightbackground=fg_color)
+        self.text_box.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
+
+    def save(self, filename):
+        # Save the content in another thread
+        thread = Thread(target=self._save_content, args=(filename,))
+        thread.start()
+
+    def _save_content(self, filename):
+        # Get the content of the text box
+        content = self.text_box.get("1.0", tk.END)
+
+        # Create the directory if it doesn't exist
+        directory = '.traces'
+
+        full = os.path.join(os.getcwd(), "traces", filename)
+
+        # Write the content to the file
+        with open(full, 'w', encoding='utf-8') as file:
+            file.write(content)
+        print("Content saved to:", full)
 
 
 
 
 
+class GroundZero(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Ground Zero")
+        self.dark_bg = "#000000"
+        self.dark_fg = "#FFFFFF"
 
-root = tk.Tk()
-root.title("Ground Zero")
+        self.configure(bg=self.dark_bg)
+        self.attributes('-fullscreen', True)  # For fullscreen
+        self.configure_styles()
+        self.create_widgets()
 
-dark_bg = "#000000"
-dark_fg = "#FFFFFF"
+        self.last_checked_second=-1
 
-root.configure(bg=dark_bg)
-root.attributes('-fullscreen', True)  # For fullscreen
+    def configure_styles(self):
+        self.style = ThemedStyle(self)
+        self.style.set_theme('black')
+        self.style.configure("Horizontal.TProgressbar", background=self.dark_fg, troughcolor=self.dark_bg, bordercolor=self.dark_bg)
 
-style = ThemedStyle(root)
-style.set_theme('black')
-style.configure("Horizontal.TProgressbar", background=dark_fg, troughcolor=dark_bg, bordercolor=dark_bg)
+    def create_widgets(self):
+        self.create_top_frame()
+        self.create_middle_frame()
+        self.create_bottom_frame()
 
+    def create_top_frame(self):
+        self.top_frame = tk.Frame(self, height=self.winfo_screenheight() // 5, bg=self.dark_bg)
+        self.top_frame.pack(side=tk.TOP, fill=tk.BOTH, padx=10)
+        self.marquee = Marquee(self.top_frame, borderwidth=1, c2=self.dark_bg, c1=self.dark_fg)
+        self.marquee.pack(pady=10, fill=tk.BOTH, expand=True)
 
-# Create frames for each section
-top_frame = tk.Frame(root, height=root.winfo_screenheight()//5)
-middle_frame = tk.Frame(root, height=root.winfo_screenheight()//5)
-bottom_frame = tk.Frame(root, height=3*root.winfo_screenheight()//5)
+    def create_middle_frame(self):
+        self.middle_frame = tk.Frame(self, height=self.winfo_screenheight() // 5, bg=self.dark_bg)
+        self.middle_frame.pack(side=tk.TOP, fill=tk.BOTH)
+        rn = datetime.now()
+        self.right_clock = ProgressClock(self.middle_frame, width=self.winfo_screenwidth() // 2, c2=self.dark_bg, c1=self.dark_fg)
+        self.left_primes = PrimeFun(self.middle_frame, width=self.winfo_screenwidth() // 2, trigger=int(rn.hour * 100) + int(rn.minute), c2=self.dark_bg, c1=self.dark_fg)
+        self.left_primes.pack(side=tk.LEFT, fill=tk.BOTH, padx=(10, 5), expand=True)
+        self.right_clock.pack(side=tk.LEFT, fill=tk.BOTH, padx=(5, 10), expand=True)
 
-top_frame.configure(bg=dark_bg)
-middle_frame.configure(bg=dark_bg)
-bottom_frame.configure(bg=dark_bg)
+    def create_bottom_frame(self):
+        self.bottom_frame = TextEditor(self, height=3 * self.winfo_screenheight() // 5, bg_color=self.dark_bg, fg_color=self.dark_fg)
+        self.bottom_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-top_frame.pack(side=tk.TOP, fill=tk.BOTH, padx=10)
-middle_frame.pack(side=tk.TOP, fill=tk.BOTH)
-bottom_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+    def goes_the_clock(self):
+        rn=datetime.now()
+        
+        if self.left_primes.get_complete(): # exit if we're all finished
+            self.destroy()
+            return
 
-# Subdivide middle frame
-rn = datetime.now()
-left_middle_frame = ProgressClock(middle_frame, width=root.winfo_screenwidth()//2, c2=dark_bg, c1=dark_fg)
-right_middle_frame = PrimeFun(middle_frame, width=root.winfo_screenwidth()//2, trigger=int(rn.hour * 100) + int(rn.minute), c2=dark_bg, c1=dark_fg)
+        #self.after_idle I accidentally typed this... or autocomplete or something. that's interesting that I decided to type that. i'll keep it!
+        self.right_clock.tock(rn)
+        
+        if self.marquee and self.marquee.get_displayed_min() != rn.minute:
+            self.left_primes.change_trigger(int(rn.hour * 100) + int(rn.minute))
+            self.marquee.tick(rn)
+            self.bottom_frame.save(f'{datetime.now().strftime("%Y%m%dT%H%M%S")}.txt')
+        self.after((1000 - rn.microsecond // 1000), self.goes_the_clock)
 
-right_middle_frame.pack(side=tk.LEFT, fill=tk.BOTH, padx=(10,5), expand=True)
-left_middle_frame.pack(side=tk.LEFT, fill=tk.BOTH, padx=(5,10), expand=True)
+    def run(self):
+        self.after((1000 - datetime.now().microsecond // 1000), self.goes_the_clock)
+        self.mainloop()
 
-
-# Top frame text
-explanation_text = Marquee(top_frame, borderwidth=1, c2=dark_bg, c1=dark_fg)
-explanation_text.pack(pady=10, fill=tk.BOTH, expand=True)
-
-# Bottom frame - large text input box
-large_text_box = tk.Text(bottom_frame, relief="flat", font=("Courier", 20))
-large_text_box.configure(bg=dark_bg, fg=dark_fg, insertbackground=dark_fg, highlightthickness=1, highlightbackground=dark_fg)
-large_text_box.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
-
-
-root.mainloop()
+if __name__ == "__main__":
+    app = GroundZero()
+    app.run()

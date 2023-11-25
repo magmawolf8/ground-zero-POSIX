@@ -1,0 +1,3 @@
+i need to implement ctrl+z functionality
+I also need to change the timing of the marquee scroll
+also there, something that blocks 

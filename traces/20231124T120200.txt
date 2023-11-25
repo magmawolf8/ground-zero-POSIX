@@ -1,0 +1,5 @@
+how do I add git functionality to this?
+i need to know how to visualize diagrams in git
+I also need to know if commits can be done in memory, holy shit
+
+At least the different saves here are in diffs. maybe, like that
